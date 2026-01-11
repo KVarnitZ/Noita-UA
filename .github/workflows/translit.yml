@@ -42,7 +42,7 @@ jobs:
           cd external/UkrainianTransliterator
           cargo build --release
           mkdir -p ../../.github/bin
-          cp target/release/ukrainian-transliterator ../../.github/bin/dstu9112
+          cp target/release/dstu9112 ../../.github/bin/dstu9112
           chmod +x ../../.github/bin/dstu9112
 
       - name: Checkout or create latyn branch
