@@ -53,15 +53,25 @@ jobs:
           MAIN_COMMIT=$(git rev-parse HEAD)
           echo "MAIN_COMMIT=$MAIN_COMMIT" >> $GITHUB_ENV
 
+          rm -f .github/bin/dstu9112
+
           if git ls-remote --heads origin latyn | grep -q latyn; then
             echo "Ğilka latyn vže isnuje, onovljujemo..."
             git fetch origin latyn:latyn
+            git checkout latyn
           else
             echo "Stvorjujeme latyn..."
             git checkout -b latyn
             git push -u origin latyn
-            git checkout main
           fi
+
+      - name: Rebuild transliterator on latyn branch
+        run: |
+          cd external/UkrainianTransliterator
+          cargo build --release
+          mkdir -p ../../.github/bin
+          cp target/release/dstu9112 ../../.github/bin/dstu9112
+          chmod +x ../../.github/bin/dstu9112
 
       - name: Transliterate files
         run: |
@@ -77,7 +87,9 @@ jobs:
             fi
 
             echo "Transliteracija: $source_file -> $dest_file"
+
             mkdir -p "$(dirname "$dest_file")"
+
             local temp_file="${dest_file}.tmp"
 
             if .github/bin/dstu9112 < "$source_file" > "$temp_file" 2>/dev/null; then
@@ -99,24 +111,31 @@ jobs:
             ["Manual Install Version/Ukrainian_Language/translation.csv"]="Manual Install Version Latyn/Ukrainian_Language_Latyn/translation.csv"
           )
 
-          git checkout latyn || git checkout -b latyn
-
           echo "Kopijuvannja ta transliteracija fajliv..."
-          
+          echo ""
+
           for source_file in "${!FILE_MAPPING[@]}"; do
             dest_file="${FILE_MAPPING[$source_file]}"
 
             if git show "main:$source_file" > /dev/null 2>&1; then
               temp_source="/tmp/source_$(basename "$source_file")"
               git show "main:$source_file" > "$temp_source"
+
               transliterate_file "$temp_source" "$dest_file" || true
+
               rm -f "$temp_source"
+            else
+              echo "Fajl ne znajdeno v main: $source_file"
             fi
           done
 
+          echo ""
+          echo "Transliteraciju zaveršeno!"
+          
       - name: Commit and push to latyn branch
         run: |
           git add -A
+
           if git diff --staged --quiet; then
             echo "Nemaje zmin dlja komitu"
             exit 0
@@ -130,6 +149,9 @@ jobs:
                      -m "" \
                      -m "Transliterovano GitHub Actions"
 
+          echo "Vidpravka zmin do origin/latyn..."
           git push origin latyn
+          
+          echo "Uspišno onovleno ğilku latyn!"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
