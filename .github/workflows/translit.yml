@@ -99,7 +99,7 @@ jobs:
             ["Manual Install Version/Ukrainian_Language/translation.csv"]="Manual Install Version Latyn/Ukrainian_Language_Latyn/translation.csv"
           )
 
-          git checkout latyn 2>/dev/null || git checkout -b latyn
+          git checkout latyn || git checkout -b latyn
 
           echo "Kopijuvannja ta transliteracija fajliv..."
           
